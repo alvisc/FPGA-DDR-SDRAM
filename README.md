@@ -240,11 +240,11 @@ Note that each burst read and write cannot exceed a row boundary within DDR1. Fo
                                                                             _____
     bready  _______________________________________________________________/     \______
 
-一个典型的，突发长度为 4 （awlen=3） 的 AXI4 写操作如上图。分为 3 步：
+A typical AXI4 write operation with a burst length of 4 (`arlen=3`) is shown above. Divided into 3 steps:
 
-* **地址通道握手**：AXI4 主机把 awvalid 信号拉高，指示想要发起写动作，图中经过一周期后，DDR1 控制器才把 awready 信号拉高，说明地址通道握手成功（在此之前，DDR1 控制器可能在处理上一次读写动作，或者在进行刷新，因此暂时没把 awready 拉高）。握手成功的同时，DDR1 控制器收到待写地址（awaddr）和突发长度（awlen），awlen=8'd3 说明突发长度为 4。
-* **数据传送**：AXI4 总线上的 wvalid 和 wready 进行 4 次握手，把突发传输的 4 个数据写入 DDR1。在握手时，若 AXI4 主机还没准备好数据，可以把 wvalid 拉低，若 DDR1 控制器还没准备好接受数据，会把 wready 拉低。注意，根据 AXI4 总线的规定，在突发传输的最后一个数据传输的同时需要把 wlast 信号置高（实际上即使不置高，DDR1 控制器也能根据突发长度自动结束数据传送，进入写响应状态）。
-* **写响应**：数据传送结束后，DDR1 控制器还需要和 AXI4 主机进行一次握手，才能彻底结束本次写动作。DDR1 控制器在数据传送结束后立即把 wvalid 信号拉高，并等待 wready 为高。完成该握手后，DDR1才能响应下一次读写操作。
+* **Address channel handshake**：The AXI4 host asserts the `awvalid` signal high to indicate the initiation of a write operation. In the diagram, it takes one clock cycle before the DDR1 controller asserts the `awready` signal high, indicating a successful address channel handshake. Before this, the DDR1 controller might be handling a previous read or write operation or performing a refresh, which is why `awready` was not asserted. When the handshake succeeds, the DDR1 controller receives the address to be written (`awaddr`) and the burst length (`awlen`). `awlen=8'd3` indicates a burst length of 4.
+* **Data transfer**：On the AXI4 bus, `wvalid` and `wready` signals are used for the handshake process to transfer 4 burst data items into DDR1. During the handshake, if the AXI4 master is not ready with the data, it can de-assert `wvalid`. Similarly, if the DDR1 controller is not ready to accept data, it will de-assert `wready`. According to the AXI4 bus protocol, the `wlast` signal must be asserted high during the transfer of the last data item in a burst transfer (although, in practice, the DDR1 controller can automatically end the data transfer based on the burst length and enter the write response state even if `wlast` is not asserted).
+* **Write Response:**：After the data transfer is completed, the DDR1 controller needs to handshake with the AXI4 master one more time to finalize the write operation. The DDR1 controller will assert the `bvalid` signal high immediately after the data transfer and wait for `bready` to be high. Once this handshake is completed, the DDR1 controller can respond to the next read or write operation.
 
 ### AXI4 Read Operation
 
@@ -269,7 +269,7 @@ Note that each burst read and write cannot exceed a row boundary within DDR1. Fo
 
 A typical AXI4 read operation with a burst length of 5 (`arlen=4`) is shown above. Divided into 2 steps:
 
-* **Address channel handshake**: The AXI4 host pulls the `arvalid` signal high, indicating that it wants to initiate a write action. After a cycle in the figure, the DDR1 controller pulls the ready signal high, indicating that the address channel handshake is successful (before this , the DDR1 controller may be processing the last read or write action, or performing a refresh, so it has not pulled ready for the time being). At the same time as the handshake is successful, the DDR1 controller receives the address to be read (`araddr`) and the burst length (`arlen`). `arlen=8'd4` means that the burst length is 5.
+* **Address channel handshake**: The AXI4 host pulls the `arvalid` signal high, indicating that it wants to initiate a read action. After a cycle in the figure, the DDR1 controller pulls the ready signal high, indicating that the address channel handshake is successful (before this , the DDR1 controller may be processing the last read or write action, or performing a refresh, so it has not pulled ready for the time being). At the same time as the handshake is successful, the DDR1 controller receives the address to be read (`araddr`) and the burst length (`arlen`). `arlen=8'd4` means that the burst length is 5.
 * **Data transfer**: `rvalid` and `rready` on the AXI4 bus perform 5 handshakes, and read out 5 of the burst transfer. During handshake, if the AXI4 host is not ready to accept data, `rready` can be pulled low, and the DDR1 controller will keep the current data until the AXI4 host can accept the data (that is, pull `rready` high). When the last data is transferred, the DDR1 controller will pull `rlast` high.
 
 > Note: When the module parameter `READ_BUFFER=0`, the module will save a BRAM resource and also reduce the delay between address channel handshake and data transfer. But the DDR1 controller ignores the `rready=0` condition and does not wait for the AXI4 host to be ready to accept data. This will destroy the completeness of the AXI4 protocol, but it may be useful in some simple situations.
